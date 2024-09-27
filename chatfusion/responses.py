@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Union, Generator, List
 from .types import TYPE_CHECKING, Generator, Union
@@ -106,7 +108,7 @@ class OpenAIResponse(Response):
 
 
 class GeminiResponse(Response):
-    def __init__(self, response: genai.protos.GenerateContentResponse, streamed: bool, generator: 'ResponseGenerator', prompt: 'BasePrompt'):
+    def __init__(self, response: 'genai.protos.GenerateContentResponse', streamed: bool, generator: 'ResponseGenerator', prompt: 'BasePrompt'):
         super().__init__(response, streamed, generator, prompt)
         
     def _get_choices(self) -> List:
