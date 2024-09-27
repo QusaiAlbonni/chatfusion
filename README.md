@@ -14,14 +14,14 @@ A flexible and powerful Python library for interacting with various AI language 
 ## Installation
 
 ```bash
-pip install chatbots
+pip install chatfusion
 ```
 and install the AI libraries you plan on using, for now google-generativeai and openai have built in support
 
 ## Usage
 
 ```python
-from chatbots import configure, GeneratorFactory, Prompt
+from chatfusion import configure, GeneratorFactory, Prompt
 
 configure(gemini_api_key="YOUR_API_KEY", openai_api_key= 'YOUR_API_KEY')
 
