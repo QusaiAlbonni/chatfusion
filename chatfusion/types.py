@@ -12,6 +12,7 @@ Content = Union[Iterable[Union[str, File]], File, str]
 class Message(TypedDict):
     role: RoleType
     content: Content
+    id: int | None
 
 
 MessageList = Iterable[Message]

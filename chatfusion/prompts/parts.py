@@ -55,10 +55,11 @@ class PartStringifyMixin:
         return str(parts)
 
 class Message(Part, PartConvertableMixin, PartStringifyMixin):
-    def __init__(self, role, content: Content) -> None:
+    def __init__(self, role, content: Content, id: int | None = None) -> None:
         content= self.to_part(content)
         super().__init__(content)
         self.role = role
+        self.id = id
 
     def get_role(self) -> str:
         return self.role
@@ -74,8 +75,8 @@ class Message(Part, PartConvertableMixin, PartStringifyMixin):
 
 
 class UserMessage(Message):
-    def __init__(self, content: Content) -> None:
-        super().__init__('user', content)
+    def __init__(self, content: Content, id=None) -> None:
+        super().__init__('user', content, id)
 
     @classmethod
     def from_text(cls, text: str) -> UserMessage:
@@ -87,8 +88,8 @@ class UserMessage(Message):
 
 
 class SystemMessage(Message):
-    def __init__(self, content: Content) -> None:
-        super().__init__('system', content)
+    def __init__(self, content: Content, id=None) -> None:
+        super().__init__('system', content, id)
 
     @classmethod
     def from_text(cls, text: str) -> SystemMessage:
@@ -97,8 +98,8 @@ class SystemMessage(Message):
 
 
 class AssistantMessage(Message):
-    def __init__(self, content: Content) -> None:
-        super().__init__('assistant', content)
+    def __init__(self, content: Content, id=None) -> None:
+        super().__init__('assistant', content, id)
 
     @classmethod
     def from_text(cls, text: str) -> AssistantMessage:

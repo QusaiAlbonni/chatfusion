@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from .generators import ResponseGenerator
+from .generators import ResponseGenerator, AsyncResponseGenerator
 from typing import Type
 from .model_registry import models, Provider, ModelRegistry
-from .exceptions import ModelNotFoundException
+from .exceptions import ModelNotFound
 
 
 class GeneratorFactory:
     def __init__(self, registry: ModelRegistry = models):
         self.registry = registry
 
-    def create_generator(self, provider_name: str= None, model_name: str = None, temp: float=0.7) -> ResponseGenerator:
+    def create_generator(self, provider_name: str= None, model_name: str = None, temp: float=1.0) -> ResponseGenerator | AsyncResponseGenerator:
         generator_class = None
         
         if provider_name is not None:
@@ -21,7 +21,7 @@ class GeneratorFactory:
             try:
                 generator_class = self.get_generator_class(self.get_provider(model_name))
             except AttributeError:
-                raise ModelNotFoundException("Gemini model not found make sure to update the gemini models if your model is not in the default ones")
+                raise ModelNotFound("model not found make sure to update the models if your model is not in the default ones")
         else:
             provider = self.registry.default_provider
             model_name = provider.default_model

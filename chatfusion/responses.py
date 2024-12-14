@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Union, Generator, List
 from .types import TYPE_CHECKING, Generator, Union
 from .model_registry import genai, openai
-from .exceptions import BadInputException, UnexpectedBehavior, ForbiddenException
+from .exceptions import InvalidPrompt, UnexpectedBehavior, Forbidden
 if TYPE_CHECKING:
     from .generators import ResponseGenerator
     from .prompts import BasePrompt
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class BaseResponse(ABC):
     @abstractmethod
-    def get_text(self) -> Union[str, Generator[str, None, None]]:
+    def get_text(self, index=0) -> Union[str, Generator[str, None, None]]:
         pass
 
 
@@ -26,10 +26,10 @@ class Response(BaseResponse):
     def _get_choices(self) -> List:
         return getattr(self._response, 'choices', [self._response])
 
-    def get_text(self) -> Union[str, Generator[str, None, None]]:
+    def get_text(self, index=0) -> Union[str, Generator[str, None, None]]:
         if self.streamed:
-            return self.stream_text()
-        return self.text()
+            return self.stream_text(index)
+        return self.text(index)
     
     def get_original_response(self):
         return self._response
@@ -48,22 +48,22 @@ class Response(BaseResponse):
             reason = self.get_finish_reason(choice)
             match reason:
                 case 'SAFETY':
-                    raise BadInputException(f"model did not finish the response properly", 
-                                            f"{self.get_finish_reason(choice.finish_reason)}")
+                    raise InvalidPrompt(f"model did not finish the response properly", 
+                                            f"{reason}")
                 case 'FUNCTION_CALL' | 'TOOL_CALL':
-                    raise ForbiddenException(f"calling text() on a response that asked for a function call", 
-                                            f"{self.get_finish_reason(choice.finish_reason)}")
+                    raise Forbidden(f"calling text() on a response that asked for a function call", 
+                                            f"{reason}")
                 case 'MAX_TOKENS':
-                    raise BadInputException("Model could not parse prompt as it went over the token limit", 
-                                            f"{self.get_finish_reason(choice.finish_reason)}")
+                    raise InvalidPrompt("Model could not parse prompt as it went over the token limit", 
+                                            f"{reason}")
                 case _:
                     raise UnexpectedBehavior("API returned an unexpected finish reason","UKNOWN")
         if self.streamed:
-            raise ForbiddenException(f"calling text() on a streamed response; use stream_text")
+            raise Forbidden(f"calling text() on a streamed response; use stream_text")
         return self.get_choice_content(choice)
 
     @abstractmethod
-    def stream_text(self) -> Generator[str, None, None]:
+    def stream_text(self, index=0) -> Generator[str, None, None]:
         pass
     
     @abstractmethod
@@ -82,10 +82,10 @@ class OpenAIResponse(Response):
     def _get_choices(self) -> List:
         return self._response.choices if hasattr(self._response, 'choices') else [self._response]
 
-    def stream_text(self) -> Generator[str, None, None]:
+    def stream_text(self, index=0) -> Generator[str, None, None]:
         for chunk in self._response:
-            if chunk.choices[0].delta.content is not None:
-                yield chunk.choices[0].delta.content
+            if chunk.choices[index].delta.content is not None:
+                yield chunk.choices[index].delta.content
 
     def get_choice_content(self, choice):
         return choice.message.content
@@ -104,6 +104,8 @@ class OpenAIResponse(Response):
 
     def is_choice_safe(self, index=0) -> bool:
         choice = self.get_choice(index)
+        if self.streamed:
+            return True
         return choice.finish_reason == 'stop'
 
 
@@ -114,16 +116,18 @@ class GeminiResponse(Response):
     def _get_choices(self) -> List:
         return self._response.candidates if hasattr(self._response, 'candidates') else [self._response]
 
-    def stream_text(self) -> Generator[str, None, None]:
+    def stream_text(self, index=0) -> Generator[str, None, None]:
         for chunk in self._response:
             yield chunk
     
     def get_choice_content(self, choice):
         return choice.content.parts[0].text
 
-    def get_finish_reason(self, reason):
+    def get_finish_reason(self, choice: genai.types.protos.Candidate):
+        reason = choice.finish_reason.value
         for attr_name, attr_value in genai.types.protos.Candidate.FinishReason.__dict__.items():
             if attr_value == reason:
+                print(attr_value)
                 return attr_name
 
     def is_choice_safe(self, index=0) -> bool:

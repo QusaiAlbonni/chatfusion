@@ -92,7 +92,11 @@ openai_provider = Provider('openai',
                            default_model='gpt-4o-mini', 
                            initial_models={
                                'gpt-4o-mini': {'some': 'data'},
-                               'gpt-3.5-turbo': {'other': 'data'}
+                               'gpt-4o': {'other': 'data'},
+                               'o1-mini': {},
+                               'o1-preview': {},
+                               'gpt-3.5-turbo': {'other': 'data'},
+                               'text-davinci-003': {'other': 'data'},
                            })
 
 def register_openai_default_provider():
